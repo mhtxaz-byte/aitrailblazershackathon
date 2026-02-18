@@ -1,0 +1,1181 @@
+"""
+Basketball Lineup Analyzer
+BYU Cougars vs Arizona Wildcats — 2025-26 Season
+"""
+
+import streamlit as st
+import pandas as pd
+import numpy as np
+import plotly.graph_objects as go
+
+# ---------------------------------------------------------------------------
+# Data — 2025-26 season stats from ESPN
+# ---------------------------------------------------------------------------
+
+BYU_PLAYERS = {
+    "AJ Dybantsa": {
+        "number": 3, "pos": "F", "height": "6'9\"", "weight": "—",
+        "class": "FR", "hometown": "Brockton, MA",
+        "gp": 25, "min": 33.2, "pts": 24.4, "reb": 6.6, "ast": 3.8,
+        "stl": 1.2, "blk": 0.4, "to": 2.9, "fg_pct": 53.6,
+        "three_pct": 35.9, "ft_pct": 75.1,
+    },
+    "Robert Wright III": {
+        "number": 1, "pos": "G", "height": "6'1\"", "weight": "183 lbs",
+        "class": "SO", "hometown": "Wilmington, DE",
+        "gp": 25, "min": 34.4, "pts": 18.7, "reb": 3.7, "ast": 4.9,
+        "stl": 1.2, "blk": 0.0, "to": 2.3, "fg_pct": 48.8,
+        "three_pct": 46.1, "ft_pct": 80.2,
+    },
+    "Richie Saunders": {
+        "number": 15, "pos": "G", "height": "6'5\"", "weight": "200 lbs",
+        "class": "SR", "hometown": "Riverton, UT",
+        "gp": 25, "min": 31.4, "pts": 18.0, "reb": 5.8, "ast": 2.1,
+        "stl": 1.7, "blk": 0.3, "to": 1.6, "fg_pct": 48.9,
+        "three_pct": 37.6, "ft_pct": 81.7,
+    },
+    "Dawson Baker": {
+        "number": 25, "pos": "G", "height": "6'4\"", "weight": "190 lbs",
+        "class": "SR", "hometown": "Coto De Caza, CA",
+        "gp": 6, "min": 19.8, "pts": 7.5, "reb": 1.7, "ast": 0.5,
+        "stl": 0.5, "blk": 0.0, "to": 0.8, "fg_pct": 45.2,
+        "three_pct": 47.4, "ft_pct": 88.9,
+    },
+    "Kennard Davis Jr.": {
+        "number": 30, "pos": "F", "height": "6'6\"", "weight": "215 lbs",
+        "class": "JR", "hometown": "St. Louis, MO",
+        "gp": 22, "min": 28.3, "pts": 7.2, "reb": 2.7, "ast": 1.3,
+        "stl": 1.2, "blk": 0.1, "to": 0.8, "fg_pct": 36.5,
+        "three_pct": 28.8, "ft_pct": 76.5,
+    },
+    "Keba Keita": {
+        "number": 13, "pos": "F", "height": "6'8\"", "weight": "231 lbs",
+        "class": "SR", "hometown": "Bamako, Mali",
+        "gp": 23, "min": 21.3, "pts": 6.4, "reb": 7.1, "ast": 0.3,
+        "stl": 1.0, "blk": 1.8, "to": 0.7, "fg_pct": 63.9,
+        "three_pct": 0.0, "ft_pct": 54.5,
+    },
+    "Mihailo Bošković": {
+        "number": 5, "pos": "F", "height": "6'10\"", "weight": "—",
+        "class": "SR", "hometown": "Uzice, Serbia",
+        "gp": 24, "min": 12.3, "pts": 3.3, "reb": 2.0, "ast": 0.8,
+        "stl": 0.2, "blk": 0.5, "to": 0.6, "fg_pct": 45.3,
+        "three_pct": 33.3, "ft_pct": 75.0,
+    },
+    "Aleksej Kostić": {
+        "number": 6, "pos": "G", "height": "6'4\"", "weight": "—",
+        "class": "FR", "hometown": "Pfaffstätten, Austria",
+        "gp": 17, "min": 7.7, "pts": 2.5, "reb": 0.6, "ast": 0.4,
+        "stl": 0.2, "blk": 0.0, "to": 0.4, "fg_pct": 37.8,
+        "three_pct": 35.3, "ft_pct": 100.0,
+    },
+    "Khadim Mboup": {
+        "number": 7, "pos": "F", "height": "6'9\"", "weight": "—",
+        "class": "FR", "hometown": "Dakar, Senegal",
+        "gp": 24, "min": 15.1, "pts": 2.3, "reb": 5.0, "ast": 0.5,
+        "stl": 0.6, "blk": 0.7, "to": 0.7, "fg_pct": 44.4,
+        "three_pct": 22.2, "ft_pct": 33.3,
+    },
+    "Tyler Mrus": {
+        "number": 2, "pos": "F", "height": "6'7\"", "weight": "205 lbs",
+        "class": "JR", "hometown": "Bothell, WA",
+        "gp": 21, "min": 10.1, "pts": 2.2, "reb": 1.0, "ast": 0.3,
+        "stl": 0.2, "blk": 0.0, "to": 0.2, "fg_pct": 32.6,
+        "three_pct": 31.0, "ft_pct": 85.7,
+    },
+    "Abdullah Ahmed": {
+        "number": 34, "pos": "C", "height": "6'10\"", "weight": "220 lbs",
+        "class": "SO", "hometown": "Cairo, Egypt",
+        "gp": 12, "min": 14.0, "pts": 1.9, "reb": 3.8, "ast": 0.6,
+        "stl": 0.2, "blk": 2.0, "to": 0.5, "fg_pct": 56.3,
+        "three_pct": 0.0, "ft_pct": 50.0,
+    },
+    "Dominique Diomande": {
+        "number": 24, "pos": "F", "height": "6'7\"", "weight": "190 lbs",
+        "class": "FR", "hometown": "Paris, France",
+        "gp": 16, "min": 5.8, "pts": 1.9, "reb": 0.9, "ast": 0.2,
+        "stl": 0.3, "blk": 0.0, "to": 0.1, "fg_pct": 39.1,
+        "three_pct": 16.7, "ft_pct": 62.5,
+    },
+    "Xavion Staton": {
+        "number": 33, "pos": "C", "height": "6'11\"", "weight": "—",
+        "class": "FR", "hometown": "Las Vegas, NV",
+        "gp": 9, "min": 4.9, "pts": 0.6, "reb": 0.4, "ast": 0.3,
+        "stl": 0.0, "blk": 0.6, "to": 0.1, "fg_pct": 50.0,
+        "three_pct": 0.0, "ft_pct": 50.0,
+    },
+    "Brody Kozlowski": {
+        "number": 4, "pos": "F", "height": "6'8\"", "weight": "—",
+        "class": "SO", "hometown": "Draper, UT",
+        "gp": 0, "min": 0.0, "pts": 0.0, "reb": 0.0, "ast": 0.0,
+        "stl": 0.0, "blk": 0.0, "to": 0.0, "fg_pct": 0.0,
+        "three_pct": 0.0, "ft_pct": 0.0,
+    },
+    "Nate Pickens": {
+        "number": 12, "pos": "G", "height": "6'3\"", "weight": "—",
+        "class": "SR", "hometown": "El Mirage, AZ",
+        "gp": 0, "min": 0.0, "pts": 0.0, "reb": 0.0, "ast": 0.0,
+        "stl": 0.0, "blk": 0.0, "to": 0.0, "fg_pct": 0.0,
+        "three_pct": 0.0, "ft_pct": 0.0,
+    },
+    "Jared McGregor": {
+        "number": 51, "pos": "G", "height": "6'3\"", "weight": "180 lbs",
+        "class": "SR", "hometown": "Saratoga Springs, UT",
+        "gp": 6, "min": 1.2, "pts": 0.0, "reb": 0.3, "ast": 0.3,
+        "stl": 0.0, "blk": 0.0, "to": 0.0, "fg_pct": 0.0,
+        "three_pct": 0.0, "ft_pct": 0.0,
+    },
+    "KJ Perry": {
+        "number": 0, "pos": "G", "height": "6'3\"", "weight": "180 lbs",
+        "class": "FR", "hometown": "—",
+        "gp": 0, "min": 0.0, "pts": 0.0, "reb": 0.0, "ast": 0.0,
+        "stl": 0.0, "blk": 0.0, "to": 0.0, "fg_pct": 0.0,
+        "three_pct": 0.0, "ft_pct": 0.0,
+    },
+}
+
+ARIZONA_PLAYERS = {
+    "Brayden Burries": {
+        "number": 5, "pos": "G", "height": "6'4\"", "weight": "205 lbs",
+        "class": "FR", "hometown": "San Bernardino, CA",
+        "gp": 25, "min": 29.1, "pts": 15.7, "reb": 4.7, "ast": 2.6,
+        "stl": 1.6, "blk": 0.2, "to": 0.0, "fg_pct": 50.0,
+        "three_pct": 37.3, "ft_pct": 79.6,
+    },
+    "Koa Peat": {
+        "number": 10, "pos": "F", "height": "6'8\"", "weight": "235 lbs",
+        "class": "FR", "hometown": "Chandler, AZ",
+        "gp": 25, "min": 27.0, "pts": 13.8, "reb": 5.4, "ast": 2.6,
+        "stl": 0.7, "blk": 0.7, "to": 0.0, "fg_pct": 54.2,
+        "three_pct": 33.3, "ft_pct": 60.6,
+    },
+    "Jaden Bradley": {
+        "number": 0, "pos": "G", "height": "6'3\"", "weight": "200 lbs",
+        "class": "SR", "hometown": "Rochester, NY",
+        "gp": 25, "min": 29.2, "pts": 13.4, "reb": 3.4, "ast": 4.4,
+        "stl": 1.8, "blk": 0.0, "to": 0.0, "fg_pct": 48.7,
+        "three_pct": 40.0, "ft_pct": 79.8,
+    },
+    "Motiejus Krivas": {
+        "number": 13, "pos": "C", "height": "7'2\"", "weight": "260 lbs",
+        "class": "JR", "hometown": "Siaulia, Lithuania",
+        "gp": 25, "min": 24.6, "pts": 11.1, "reb": 8.7, "ast": 1.1,
+        "stl": 0.7, "blk": 1.9, "to": 0.0, "fg_pct": 59.4,
+        "three_pct": 33.3, "ft_pct": 79.2,
+    },
+    "Tobe Awaka": {
+        "number": 30, "pos": "F", "height": "6'8\"", "weight": "255 lbs",
+        "class": "SR", "hometown": "Hyde Park, NY",
+        "gp": 25, "min": 21.2, "pts": 10.0, "reb": 9.7, "ast": 1.0,
+        "stl": 0.3, "blk": 0.7, "to": 0.0, "fg_pct": 60.5,
+        "three_pct": 62.5, "ft_pct": 65.3,
+    },
+    "Ivan Kharchenkov": {
+        "number": 8, "pos": "F", "height": "6'7\"", "weight": "220 lbs",
+        "class": "FR", "hometown": "Munich, Germany",
+        "gp": 25, "min": 26.2, "pts": 9.7, "reb": 3.6, "ast": 2.2,
+        "stl": 1.6, "blk": 0.4, "to": 0.0, "fg_pct": 48.7,
+        "three_pct": 29.2, "ft_pct": 72.5,
+    },
+    "Anthony Dell'Orso": {
+        "number": 3, "pos": "G", "height": "6'6\"", "weight": "205 lbs",
+        "class": "SR", "hometown": "Melbourne, Australia",
+        "gp": 25, "min": 20.8, "pts": 8.0, "reb": 2.0, "ast": 2.4,
+        "stl": 0.9, "blk": 0.2, "to": 0.0, "fg_pct": 38.4,
+        "three_pct": 29.7, "ft_pct": 86.0,
+    },
+    "Addison Arnold": {
+        "number": 22, "pos": "G", "height": "6'3\"", "weight": "185 lbs",
+        "class": "SO", "hometown": "Simi Valley, CA",
+        "gp": 0, "min": 0.0, "pts": 0.0, "reb": 0.0, "ast": 0.0,
+        "stl": 0.0, "blk": 0.0, "to": 0.0, "fg_pct": 0.0,
+        "three_pct": 0.0, "ft_pct": 0.0,
+    },
+    "Dwayne Aristode": {
+        "number": 2, "pos": "F", "height": "6'8\"", "weight": "220 lbs",
+        "class": "FR", "hometown": "Lelystad, Netherlands",
+        "gp": 0, "min": 0.0, "pts": 0.0, "reb": 0.0, "ast": 0.0,
+        "stl": 0.0, "blk": 0.0, "to": 0.0, "fg_pct": 0.0,
+        "three_pct": 0.0, "ft_pct": 0.0,
+    },
+    "Jackson Cook": {
+        "number": 11, "pos": "G", "height": "6'3\"", "weight": "185 lbs",
+        "class": "SO", "hometown": "Oxford, England",
+        "gp": 0, "min": 0.0, "pts": 0.0, "reb": 0.0, "ast": 0.0,
+        "stl": 0.0, "blk": 0.0, "to": 0.0, "fg_pct": 0.0,
+        "three_pct": 0.0, "ft_pct": 0.0,
+    },
+    "Sven Djopmo": {
+        "number": 42, "pos": "G", "height": "6'2\"", "weight": "190 lbs",
+        "class": "SO", "hometown": "Reims, France",
+        "gp": 0, "min": 0.0, "pts": 0.0, "reb": 0.0, "ast": 0.0,
+        "stl": 0.0, "blk": 0.0, "to": 0.0, "fg_pct": 0.0,
+        "three_pct": 0.0, "ft_pct": 0.0,
+    },
+    "Jackson Francois": {
+        "number": 7, "pos": "G", "height": "6'5\"", "weight": "160 lbs",
+        "class": "SR", "hometown": "Las Vegas, NV",
+        "gp": 0, "min": 0.0, "pts": 0.0, "reb": 0.0, "ast": 0.0,
+        "stl": 0.0, "blk": 0.0, "to": 0.0, "fg_pct": 0.0,
+        "three_pct": 0.0, "ft_pct": 0.0,
+    },
+    "Sidi Gueye": {
+        "number": 15, "pos": "F", "height": "6'11\"", "weight": "215 lbs",
+        "class": "FR", "hometown": "Guediawaye, Senegal",
+        "gp": 0, "min": 0.0, "pts": 0.0, "reb": 0.0, "ast": 0.0,
+        "stl": 0.0, "blk": 0.0, "to": 0.0, "fg_pct": 0.0,
+        "three_pct": 0.0, "ft_pct": 0.0,
+    },
+    "Bryce James": {
+        "number": 6, "pos": "G", "height": "6'5\"", "weight": "195 lbs",
+        "class": "FR", "hometown": "Akron, OH",
+        "gp": 0, "min": 0.0, "pts": 0.0, "reb": 0.0, "ast": 0.0,
+        "stl": 0.0, "blk": 0.0, "to": 0.0, "fg_pct": 0.0,
+        "three_pct": 0.0, "ft_pct": 0.0,
+    },
+    "Mabil Mawut": {
+        "number": 20, "pos": "F", "height": "6'11\"", "weight": "200 lbs",
+        "class": "FR", "hometown": "Bor, South Sudan",
+        "gp": 0, "min": 0.0, "pts": 0.0, "reb": 0.0, "ast": 0.0,
+        "stl": 0.0, "blk": 0.0, "to": 0.0, "fg_pct": 0.0,
+        "three_pct": 0.0, "ft_pct": 0.0,
+    },
+    "Evan Nelson": {
+        "number": 21, "pos": "G", "height": "6'2\"", "weight": "175 lbs",
+        "class": "SR", "hometown": "Tucson, AZ",
+        "gp": 0, "min": 0.0, "pts": 0.0, "reb": 0.0, "ast": 0.0,
+        "stl": 0.0, "blk": 0.0, "to": 0.0, "fg_pct": 0.0,
+        "three_pct": 0.0, "ft_pct": 0.0,
+    },
+}
+
+# ---------------------------------------------------------------------------
+# Helper: parse height string to inches
+# ---------------------------------------------------------------------------
+
+def height_to_inches(h: str) -> int:
+    """Convert '6\\'10\"' to 82."""
+    h = h.replace('"', "").replace("'", " ").strip()
+    parts = h.split()
+    if len(parts) == 2:
+        return int(parts[0]) * 12 + int(parts[1])
+    return 0
+
+
+# ---------------------------------------------------------------------------
+# Matchup engine
+# ---------------------------------------------------------------------------
+
+POSITION_COMPAT = {
+    ("G", "G"): 1.0,
+    ("G", "F"): 0.4,
+    ("G", "C"): 0.1,
+    ("F", "G"): 0.4,
+    ("F", "F"): 1.0,
+    ("F", "C"): 0.6,
+    ("C", "G"): 0.1,
+    ("C", "F"): 0.6,
+    ("C", "C"): 1.0,
+}
+
+
+def matchup_score(byu_player: dict, az_player: dict) -> float:
+    """
+    Score how well an Arizona player matches up against a BYU player.
+    Higher = better counter-matchup for Arizona.
+    """
+    score = 0.0
+
+    # 1. Position compatibility (0-30 pts)
+    pos_key = (byu_player["pos"], az_player["pos"])
+    score += POSITION_COMPAT.get(pos_key, 0.3) * 30
+
+    # 2. Size matchup — prefer similar height (0-20 pts)
+    byu_h = height_to_inches(byu_player["height"])
+    az_h = height_to_inches(az_player["height"])
+    if byu_h > 0 and az_h > 0:
+        diff = abs(byu_h - az_h)
+        score += max(0, 20 - diff * 3)
+
+    # 3. Scoring counter — Arizona player who can score back (0-15 pts)
+    if az_player["pts"] > 0:
+        score += min(az_player["pts"] / 20.0, 1.0) * 15
+
+    # 4. Defensive profile — steals + blocks vs BYU scorer (0-15 pts)
+    defensive = az_player["stl"] + az_player["blk"]
+    if byu_player["pts"] >= 15:
+        score += min(defensive / 3.0, 1.0) * 15
+    else:
+        score += min(defensive / 3.0, 1.0) * 8
+
+    # 5. Rebounding match (0-10 pts)
+    if byu_player["reb"] >= 5:
+        score += min(az_player["reb"] / 10.0, 1.0) * 10
+    else:
+        score += min(az_player["reb"] / 10.0, 1.0) * 5
+
+    # 6. Minutes played — prefer rotation players (0-10 pts)
+    score += min(az_player["min"] / 30.0, 1.0) * 10
+
+    return score
+
+
+def generate_matchup_reason(byu_name: str, byu: dict, az_name: str, az: dict) -> str:
+    """Generate a human-readable matchup explanation."""
+    reasons = []
+
+    if byu["pos"] == az["pos"]:
+        reasons.append(f"same position ({az['pos']})")
+    else:
+        reasons.append(f"positional flex ({az['pos']} guarding {byu['pos']})")
+
+    byu_h = height_to_inches(byu["height"])
+    az_h = height_to_inches(az["height"])
+    if byu_h > 0 and az_h > 0:
+        diff = az_h - byu_h
+        if diff > 2:
+            reasons.append(f"{diff}\" taller — size advantage")
+        elif diff < -2:
+            reasons.append(f"gives up {abs(diff)}\" but compensates elsewhere")
+
+    if byu["pts"] >= 15 and (az["stl"] + az["blk"]) >= 1.5:
+        reasons.append(
+            f"strong defender ({az['stl']:.1f} STL, {az['blk']:.1f} BLK) "
+            f"to counter {byu_name}'s {byu['pts']:.1f} PPG"
+        )
+
+    if az["pts"] >= 10:
+        reasons.append(f"scores {az['pts']:.1f} PPG on the other end")
+
+    if az["reb"] >= 7 and byu["reb"] >= 5:
+        reasons.append(f"matches on the glass ({az['reb']:.1f} RPG)")
+
+    return "; ".join(reasons).capitalize() if reasons else "Best available matchup"
+
+
+def find_best_lineup(selected_byu_names: list[str]) -> list[dict]:
+    """
+    Greedy assignment: for each BYU player (sorted by PPG desc),
+    pick the highest-scoring available Arizona player.
+    """
+    # Sort BYU selections by scoring — match top threats first
+    ordered = sorted(
+        selected_byu_names,
+        key=lambda n: BYU_PLAYERS[n]["pts"],
+        reverse=True,
+    )
+
+    # Only consider Arizona players with games played
+    available_az = {
+        name: p for name, p in ARIZONA_PLAYERS.items() if p["gp"] > 0
+    }
+    used = set()
+    results = []
+
+    for byu_name in ordered:
+        byu = BYU_PLAYERS[byu_name]
+        best_name = None
+        best_score = -1
+
+        for az_name, az in available_az.items():
+            if az_name in used:
+                continue
+            s = matchup_score(byu, az)
+            if s > best_score:
+                best_score = s
+                best_name = az_name
+
+        if best_name is None:
+            # Fallback: use any remaining Arizona player
+            remaining = [n for n in ARIZONA_PLAYERS if n not in used]
+            best_name = remaining[0] if remaining else None
+
+        if best_name:
+            az = ARIZONA_PLAYERS[best_name]
+            reason = generate_matchup_reason(byu_name, byu, best_name, az)
+            results.append({
+                "byu_name": byu_name,
+                "byu": byu,
+                "az_name": best_name,
+                "az": az,
+                "score": best_score,
+                "reason": reason,
+            })
+            used.add(best_name)
+
+    return results
+
+
+# ---------------------------------------------------------------------------
+# 5x5 matchup heatmap
+# ---------------------------------------------------------------------------
+
+MATCHUP_AXES = ["Position", "Size", "Scoring", "Defense", "Rebounding", "Efficiency"]
+
+
+def _axis_advantage(byu: dict, az: dict) -> list[float]:
+    """
+    Return per-axis advantage score from BYU's perspective.
+    Positive = BYU advantage, negative = Arizona advantage.
+    Values clamped to [-1, 1].
+    """
+    # Position: same pos is neutral; mismatch favours the bigger positional tier
+    pos_order = {"C": 3, "F": 2, "G": 1}
+    pos_diff = pos_order.get(byu["pos"], 2) - pos_order.get(az["pos"], 2)
+    pos_val = max(-1, min(1, pos_diff * 0.5))
+
+    # Size
+    byu_h = height_to_inches(byu["height"])
+    az_h  = height_to_inches(az["height"])
+    size_val = max(-1.0, min(1.0, (byu_h - az_h) / 6.0)) if byu_h and az_h else 0.0
+
+    # Scoring
+    scoring_val = max(-1.0, min(1.0, (byu["pts"] - az["pts"]) / 15.0))
+
+    # Defense (stl+blk)
+    byu_def = byu["stl"] + byu["blk"]
+    az_def  = az["stl"]  + az["blk"]
+    def_val = max(-1.0, min(1.0, (byu_def - az_def) / 3.0))
+
+    # Rebounding
+    reb_val = max(-1.0, min(1.0, (byu["reb"] - az["reb"]) / 6.0))
+
+    # Efficiency (FG%)
+    eff_val = max(-1.0, min(1.0, (byu["fg_pct"] - az["fg_pct"]) / 20.0))
+
+    return [pos_val, size_val, scoring_val, def_val, reb_val, eff_val]
+
+
+def build_matchup_matrix(results: list[dict]) -> go.Figure:
+    """
+    5x5 heatmap — rows = BYU players, columns = stat axes.
+    Green = BYU advantage, red = Arizona advantage.
+    """
+    n = len(results)
+    z = []
+    byu_labels = []
+    az_labels = []
+    hover_text = []
+
+    for r in results:
+        vals = _axis_advantage(r["byu"], r["az"])
+        z.append(vals)
+        byu_labels.append(r["byu_name"])
+        az_labels.append(r["az_name"])
+        row_hover = []
+        for ax, v in zip(MATCHUP_AXES, vals):
+            who = "BYU" if v > 0 else "AZ" if v < 0 else "Even"
+            row_hover.append(
+                f"{r['byu_name']} vs {r['az_name']}<br>"
+                f"{ax}: {who} advantage ({v:+.2f})"
+            )
+        hover_text.append(row_hover)
+
+    y_labels = [f"{b}  vs  {a}" for b, a in zip(byu_labels, az_labels)]
+
+    fig = go.Figure(data=go.Heatmap(
+        z=z,
+        x=MATCHUP_AXES,
+        y=y_labels,
+        hovertext=hover_text,
+        hoverinfo="text",
+        colorscale=[
+            [0.0, "#d32f2f"],    # strong Arizona
+            [0.35, "#ef9a9a"],   # slight Arizona
+            [0.5, "#ffffff"],    # neutral
+            [0.65, "#90caf9"],   # slight BYU
+            [1.0, "#002E5D"],    # strong BYU
+        ],
+        zmin=-1, zmax=1,
+        colorbar=dict(
+            title="Advantage",
+            tickvals=[-1, -0.5, 0, 0.5, 1],
+            ticktext=["AZ ++", "AZ +", "Even", "BYU +", "BYU ++"],
+            tickfont=dict(size=11),
+        ),
+    ))
+
+    fig.update_layout(
+        height=60 + n * 70,
+        margin=dict(t=30, b=30, l=10, r=10),
+        yaxis=dict(autorange="reversed"),
+        xaxis_side="top",
+    )
+    return fig
+
+
+# ---------------------------------------------------------------------------
+# Predicted outcome diverging bar chart
+# ---------------------------------------------------------------------------
+
+def build_predicted_outcome_chart(results: list[dict]) -> go.Figure:
+    """
+    Horizontal diverging bar chart — BYU stats extend left of origin,
+    Arizona stats extend right.  Categories: PPG, RPG, APG, STL, BLK, FG%.
+    """
+    cats = ["PPG", "RPG", "APG", "STL", "BLK", "FG%"]
+    keys = ["pts", "reb", "ast", "stl", "blk", "fg_pct"]
+
+    byu_vals = []
+    az_vals = []
+    for k in keys:
+        byu_vals.append(sum(r["byu"][k] for r in results))
+        az_vals.append(sum(r["az"][k] for r in results))
+
+    # For FG% use average not sum
+    n = len(results) or 1
+    byu_vals[-1] = byu_vals[-1] / n
+    az_vals[-1]  = az_vals[-1] / n
+
+    fig = go.Figure()
+
+    # BYU bars extend LEFT (negative x)
+    fig.add_trace(go.Bar(
+        y=cats,
+        x=[-v for v in byu_vals],
+        orientation="h",
+        name="BYU Cougars",
+        marker_color="#002E5D",
+        text=[f"{v:.1f}" for v in byu_vals],
+        textposition="inside",
+        insidetextanchor="middle",
+        textfont=dict(color="white", size=13),
+    ))
+
+    # Arizona bars extend RIGHT (positive x)
+    fig.add_trace(go.Bar(
+        y=cats,
+        x=az_vals,
+        orientation="h",
+        name="Arizona Wildcats",
+        marker_color="#CC0033",
+        text=[f"{v:.1f}" for v in az_vals],
+        textposition="inside",
+        insidetextanchor="middle",
+        textfont=dict(color="white", size=13),
+    ))
+
+    max_val = max(max(byu_vals), max(az_vals)) * 1.15
+
+    fig.update_layout(
+        barmode="overlay",
+        xaxis=dict(
+            range=[-max_val, max_val],
+            zeroline=True, zerolinewidth=2, zerolinecolor="black",
+            showticklabels=False,
+        ),
+        yaxis=dict(autorange="reversed"),
+        legend=dict(orientation="h", y=1.12, x=0.3),
+        margin=dict(t=50, b=20, l=10, r=10),
+        height=320,
+    )
+
+    # Add center origin label
+    fig.add_annotation(
+        x=0, y=-0.3, text="0", showarrow=False, yref="paper",
+        font=dict(size=11, color="gray"),
+    )
+    fig.add_annotation(
+        x=-max_val * 0.5, y=-0.12, text="< BYU", showarrow=False, yref="paper",
+        font=dict(size=12, color="#002E5D", family="Arial Black"),
+    )
+    fig.add_annotation(
+        x=max_val * 0.5, y=-0.12, text="Arizona >", showarrow=False, yref="paper",
+        font=dict(size=12, color="#CC0033", family="Arial Black"),
+    )
+
+    return fig
+
+
+# ---------------------------------------------------------------------------
+# Bench recommendation engine
+# ---------------------------------------------------------------------------
+
+def rank_bench_options(
+    selected_names: list[str],
+    results: list[dict],
+    team_players: dict,
+    is_arizona: bool = False,
+) -> list[dict]:
+    """
+    For each player NOT in the starting five who has games played,
+    compute a star rating (0-5) based on how much they would improve
+    the weakest matchup if subbed in.
+    """
+    starters = set(selected_names)
+
+    bench = []
+    for name, p in team_players.items():
+        if name in starters or p["gp"] == 0:
+            continue
+
+        # Overall impact score: weighted combination of stats
+        impact = (
+            p["pts"] * 1.0
+            + p["reb"] * 0.8
+            + p["ast"] * 0.7
+            + p["stl"] * 1.2
+            + p["blk"] * 1.2
+            + p["fg_pct"] * 0.05
+            + p["min"] * 0.1
+        )
+
+        # Positional need: how many starters share this position?
+        starter_positions = [team_players[n]["pos"] for n in starters if n in team_players]
+        pos_count = starter_positions.count(p["pos"])
+        # If position is thin (0 or 1 starter), boost value
+        if pos_count <= 1:
+            impact *= 1.25
+
+        # Find which starter this player would most likely replace
+        best_replace = None
+        best_replace_reason = "general depth"
+        for r in results:
+            if is_arizona:
+                teammate = r["az"]
+                teammate_name = r["az_name"]
+                opponent = r["byu"]
+                opponent_name = r["byu_name"]
+            else:
+                teammate = r["byu"]
+                teammate_name = r["byu_name"]
+                opponent = r["az"]
+                opponent_name = r["az_name"]
+
+            if teammate["pos"] == p["pos"] or (
+                teammate["pos"] in ("F", "G") and p["pos"] in ("F", "G")
+            ):
+                if best_replace is None or teammate["pts"] < team_players.get(
+                    best_replace, {"pts": 999}
+                ).get("pts", 999):
+                    best_replace = teammate_name
+                    # Check what they'd improve — from the bench player's team perspective
+                    if is_arizona:
+                        # Flip axis: negative _axis_advantage = Arizona weakness
+                        axis_vals = _axis_advantage(opponent, teammate)
+                        weakest_idx = int(np.argmax(axis_vals))  # BYU's biggest advantage = AZ weakness
+                    else:
+                        axis_vals = _axis_advantage(teammate, opponent)
+                        weakest_idx = int(np.argmin(axis_vals))
+                    best_replace_reason = (
+                        f"could shore up {MATCHUP_AXES[weakest_idx].lower()} "
+                        f"vs {opponent_name}"
+                    )
+
+        # Convert to 0-5 stars (relative to max possible impact)
+        bench.append({
+            "name": name,
+            "player": p,
+            "impact": impact,
+            "replace_for": best_replace,
+            "reason": best_replace_reason,
+        })
+
+    if not bench:
+        return bench
+
+    max_impact = max(b["impact"] for b in bench)
+    for b in bench:
+        b["stars"] = round((b["impact"] / max_impact) * 5 * 2) / 2  # half-star increments
+        b["stars"] = max(0.5, min(5.0, b["stars"]))
+
+    bench.sort(key=lambda b: b["impact"], reverse=True)
+    return bench
+
+
+def stars_display(n: float) -> str:
+    """Render star rating as emoji string."""
+    full = int(n)
+    half = 1 if (n - full) >= 0.5 else 0
+    empty = 5 - full - half
+    return ("★" * full) + ("½" * half) + ("☆" * empty) + f"  ({n:.1f}/5.0)"
+
+
+# ---------------------------------------------------------------------------
+# Spider / Radar charts
+# ---------------------------------------------------------------------------
+
+RADAR_CATEGORIES = ["Scoring", "Rebounding", "Playmaking", "Steals", "Blocks", "Efficiency"]
+
+
+def _team_radar_values(player_dicts: list[dict]) -> list[float]:
+    """
+    Aggregate lineup stats into 0-100 radar values.
+    Each axis is normalised against reasonable college basketball ceilings.
+    """
+    n = len(player_dicts) or 1
+    avg = lambda key: sum(p[key] for p in player_dicts) / n
+
+    scoring    = min(avg("pts") / 25.0, 1.0) * 100
+    rebounding = min(avg("reb") / 10.0, 1.0) * 100
+    playmaking = min(avg("ast") / 6.0,  1.0) * 100
+    steals     = min(avg("stl") / 2.5,  1.0) * 100
+    blocks     = min(avg("blk") / 2.5,  1.0) * 100
+    efficiency = min(avg("fg_pct") / 65.0, 1.0) * 100
+
+    return [scoring, rebounding, playmaking, steals, blocks, efficiency]
+
+
+def build_radar_chart(
+    byu_players: list[dict],
+    az_players: list[dict],
+) -> go.Figure:
+    """Return a Plotly radar figure comparing two lineups."""
+    byu_vals = _team_radar_values(byu_players)
+    az_vals  = _team_radar_values(az_players)
+
+    fig = go.Figure()
+
+    fig.add_trace(go.Scatterpolar(
+        r=byu_vals + [byu_vals[0]],
+        theta=RADAR_CATEGORIES + [RADAR_CATEGORIES[0]],
+        fill="toself",
+        name="BYU Cougars",
+        line_color="#002E5D",
+        fillcolor="rgba(0,46,93,0.25)",
+    ))
+    fig.add_trace(go.Scatterpolar(
+        r=az_vals + [az_vals[0]],
+        theta=RADAR_CATEGORIES + [RADAR_CATEGORIES[0]],
+        fill="toself",
+        name="Arizona Wildcats",
+        line_color="#CC0033",
+        fillcolor="rgba(204,0,51,0.25)",
+    ))
+
+    fig.update_layout(
+        polar=dict(radialaxis=dict(visible=True, range=[0, 100])),
+        legend=dict(x=0.35, y=-0.1, orientation="h"),
+        margin=dict(t=40, b=40, l=60, r=60),
+        height=450,
+    )
+    return fig
+
+
+# ---------------------------------------------------------------------------
+# Game simulation
+# ---------------------------------------------------------------------------
+
+def simulate_game(
+    byu_players: list[dict],
+    az_players: list[dict],
+    confidence_pct: int = 90,
+    n_sims: int = 500,
+    seed: int = 42,
+) -> go.Figure:
+    """
+    Monte-Carlo possession-by-possession simulation.
+
+    Each team's scoring rate per possession is drawn from a normal distribution
+    centred on their lineup's average PPG (scaled to ~70 possessions/game).
+    Returns a Plotly line chart with median score lines and a shaded
+    confidence band.
+    """
+    rng = np.random.default_rng(seed)
+
+    n_possessions = 70  # typical college game
+
+    # Per-possession expected points  (lineup PPG / possessions)
+    byu_ppg = sum(p["pts"] for p in byu_players)
+    az_ppg  = sum(p["pts"] for p in az_players)
+    byu_rate = byu_ppg / n_possessions
+    az_rate  = az_ppg / n_possessions
+
+    # Variance scales with FG% spread — less efficient = more volatile
+    byu_fg = np.mean([p["fg_pct"] for p in byu_players]) if byu_players else 45
+    az_fg  = np.mean([p["fg_pct"] for p in az_players])  if az_players  else 45
+    byu_sigma = byu_rate * (1.0 - byu_fg / 100) * 1.2
+    az_sigma  = az_rate  * (1.0 - az_fg  / 100) * 1.2
+
+    # Simulate: shape (n_sims, n_possessions)
+    byu_scores = rng.normal(byu_rate, byu_sigma, (n_sims, n_possessions))
+    az_scores  = rng.normal(az_rate,  az_sigma,  (n_sims, n_possessions))
+
+    # Cumulative score over possessions, clip negatives
+    byu_cum = np.clip(byu_scores, 0, None).cumsum(axis=1)
+    az_cum  = np.clip(az_scores,  0, None).cumsum(axis=1)
+
+    possessions = np.arange(1, n_possessions + 1)
+
+    # Percentiles for confidence band
+    lo = (100 - confidence_pct) / 2
+    hi = 100 - lo
+
+    byu_med = np.median(byu_cum, axis=0)
+    byu_lo  = np.percentile(byu_cum, lo, axis=0)
+    byu_hi  = np.percentile(byu_cum, hi, axis=0)
+
+    az_med = np.median(az_cum, axis=0)
+    az_lo  = np.percentile(az_cum, lo, axis=0)
+    az_hi  = np.percentile(az_cum, hi, axis=0)
+
+    fig = go.Figure()
+
+    # BYU band
+    fig.add_trace(go.Scatter(
+        x=possessions, y=byu_hi, mode="lines", line=dict(width=0),
+        showlegend=False, hoverinfo="skip",
+    ))
+    fig.add_trace(go.Scatter(
+        x=possessions, y=byu_lo, mode="lines", line=dict(width=0),
+        fill="tonexty", fillcolor="rgba(0,46,93,0.15)",
+        showlegend=False, hoverinfo="skip",
+    ))
+    # BYU median
+    fig.add_trace(go.Scatter(
+        x=possessions, y=byu_med, mode="lines",
+        name="BYU Cougars",
+        line=dict(color="#002E5D", width=3),
+    ))
+
+    # Arizona band
+    fig.add_trace(go.Scatter(
+        x=possessions, y=az_hi, mode="lines", line=dict(width=0),
+        showlegend=False, hoverinfo="skip",
+    ))
+    fig.add_trace(go.Scatter(
+        x=possessions, y=az_lo, mode="lines", line=dict(width=0),
+        fill="tonexty", fillcolor="rgba(204,0,51,0.15)",
+        showlegend=False, hoverinfo="skip",
+    ))
+    # Arizona median
+    fig.add_trace(go.Scatter(
+        x=possessions, y=az_med, mode="lines",
+        name="Arizona Wildcats",
+        line=dict(color="#CC0033", width=3),
+    ))
+
+    # Half-time line
+    fig.add_vline(x=35, line_dash="dash", line_color="gray", annotation_text="Halftime")
+
+    fig.update_layout(
+        xaxis_title="Possession",
+        yaxis_title="Cumulative Score",
+        legend=dict(x=0.01, y=0.99),
+        margin=dict(t=30, b=40),
+        height=450,
+        hovermode="x unified",
+    )
+
+    # Win probability annotation
+    byu_final = byu_cum[:, -1]
+    az_final  = az_cum[:, -1]
+    byu_wins  = (byu_final > az_final).sum()
+    az_wins   = (az_final > byu_final).sum()
+    ties      = n_sims - byu_wins - az_wins
+    byu_wp    = (byu_wins + ties * 0.5) / n_sims * 100
+    az_wp     = 100 - byu_wp
+
+    fig.add_annotation(
+        x=n_possessions, y=max(byu_med[-1], az_med[-1]) + 5,
+        text=f"Win prob: BYU {byu_wp:.0f}% — Arizona {az_wp:.0f}%",
+        showarrow=False, font=dict(size=13, color="black"),
+        bgcolor="rgba(255,255,255,0.8)",
+    )
+
+    return fig, byu_wp, az_wp, np.median(byu_final), np.median(az_final)
+
+
+# ---------------------------------------------------------------------------
+# Streamlit UI
+# ---------------------------------------------------------------------------
+
+st.set_page_config(page_title="Lineup Analyzer", layout="wide")
+
+st.title("🏀 BYU vs Arizona — Lineup Matchup Analyzer")
+st.caption("2025-26 Season  |  Select up to 5 BYU Cougars and get the best Arizona Wildcats counter-lineup")
+
+# ---- Predicted outcome bar chart (rendered if results exist) ----
+if "results" in st.session_state and st.session_state["results"]:
+    st.subheader("Predicted Outcome")
+    outcome_fig = build_predicted_outcome_chart(st.session_state["results"])
+    st.plotly_chart(outcome_fig, use_container_width=True)
+
+st.divider()
+
+# ---- BYU Roster overview ----
+with st.expander("📋 Full BYU Cougars Roster & Stats", expanded=False):
+    rows = []
+    for name, p in BYU_PLAYERS.items():
+        rows.append({
+            "#": p["number"],
+            "Player": name,
+            "Pos": p["pos"],
+            "Ht": p["height"],
+            "Class": p["class"],
+            "GP": p["gp"],
+            "PPG": p["pts"],
+            "RPG": p["reb"],
+            "APG": p["ast"],
+            "FG%": p["fg_pct"],
+            "3P%": p["three_pct"],
+        })
+    st.dataframe(
+        pd.DataFrame(rows).sort_values("PPG", ascending=False),
+        use_container_width=True,
+        hide_index=True,
+    )
+
+# ---- Selection ----
+st.subheader("Select Your BYU Starting Five")
+
+# Format options with position and PPG
+player_options = [
+    f"{name}  ({p['pos']}, {p['pts']:.1f} PPG)"
+    for name, p in sorted(BYU_PLAYERS.items(), key=lambda x: -x[1]["pts"])
+]
+name_lookup = {
+    f"{name}  ({p['pos']}, {p['pts']:.1f} PPG)": name
+    for name, p in BYU_PLAYERS.items()
+}
+
+selected_labels = st.multiselect(
+    "Choose up to 5 players:",
+    options=player_options,
+    max_selections=5,
+    placeholder="Pick your BYU lineup...",
+)
+
+selected_names = [name_lookup[label] for label in selected_labels]
+
+if selected_names:
+    st.markdown("**Your BYU Selections:**")
+    sel_rows = []
+    for name in selected_names:
+        p = BYU_PLAYERS[name]
+        sel_rows.append({
+            "#": p["number"],
+            "Player": name,
+            "Pos": p["pos"],
+            "Ht": p["height"],
+            "PPG": p["pts"],
+            "RPG": p["reb"],
+            "APG": p["ast"],
+            "STL": p["stl"],
+            "BLK": p["blk"],
+            "FG%": p["fg_pct"],
+        })
+    st.dataframe(pd.DataFrame(sel_rows), use_container_width=True, hide_index=True)
+
+st.divider()
+
+# ---- Generate matchup ----
+if st.button("🔍 Generate Arizona Counter-Lineup", type="primary", disabled=len(selected_names) == 0):
+    results = find_best_lineup(selected_names)
+    st.session_state["results"] = results
+    st.session_state["selected_names"] = selected_names
+
+    st.subheader("Suggested Arizona Wildcats Lineup")
+
+    for i, r in enumerate(results):
+        byu = r["byu"]
+        az = r["az"]
+
+        col1, col2, col3 = st.columns([2, 1, 2])
+
+        with col1:
+            st.markdown(f"**#{byu['number']} {r['byu_name']}** (BYU)")
+            st.caption(f"{byu['pos']} | {byu['height']} | {byu['class']}")
+            st.metric("PPG", f"{byu['pts']:.1f}")
+            st.caption(
+                f"{byu['reb']:.1f} RPG · {byu['ast']:.1f} APG · "
+                f"{byu['stl']:.1f} STL · {byu['blk']:.1f} BLK"
+            )
+
+        with col2:
+            st.markdown("<div style='text-align:center; padding-top:30px; font-size:2em;'>⚔️</div>", unsafe_allow_html=True)
+
+        with col3:
+            st.markdown(f"**#{az['number']} {r['az_name']}** (Arizona)")
+            st.caption(f"{az['pos']} | {az['height']} | {az['class']}")
+            st.metric("PPG", f"{az['pts']:.1f}")
+            st.caption(
+                f"{az['reb']:.1f} RPG · {az['ast']:.1f} APG · "
+                f"{az['stl']:.1f} STL · {az['blk']:.1f} BLK"
+            )
+
+        st.info(f"**Why this matchup:** {r['reason']}")
+        if i < len(results) - 1:
+            st.divider()
+
+    # ---- Summary table ----
+    st.divider()
+    st.subheader("Matchup Summary")
+    summary_rows = []
+    for r in results:
+        summary_rows.append({
+            "BYU Player": r["byu_name"],
+            "BYU Pos": r["byu"]["pos"],
+            "BYU PPG": r["byu"]["pts"],
+            "": "vs",
+            "AZ Player": r["az_name"],
+            "AZ Pos": r["az"]["pos"],
+            "AZ PPG": r["az"]["pts"],
+            "Matchup Score": f"{r['score']:.1f}",
+        })
+    st.dataframe(pd.DataFrame(summary_rows), use_container_width=True, hide_index=True)
+
+    # ---- Team comparison metrics ----
+    byu_total_pts = sum(BYU_PLAYERS[n]["pts"] for n in selected_names)
+    az_total_pts = sum(r["az"]["pts"] for r in results)
+    byu_total_reb = sum(BYU_PLAYERS[n]["reb"] for n in selected_names)
+    az_total_reb = sum(r["az"]["reb"] for r in results)
+
+    st.subheader("Lineup Comparison")
+    c1, c2, c3, c4 = st.columns(4)
+    c1.metric("BYU Combined PPG", f"{byu_total_pts:.1f}")
+    c2.metric("Arizona Combined PPG", f"{az_total_pts:.1f}")
+    c3.metric("BYU Combined RPG", f"{byu_total_reb:.1f}")
+    c4.metric("Arizona Combined RPG", f"{az_total_reb:.1f}")
+
+    # ---- Spider / Radar charts ----
+    st.divider()
+    st.subheader("Team Radar Comparison")
+
+    byu_lineup = [BYU_PLAYERS[n] for n in selected_names]
+    az_lineup  = [r["az"] for r in results]
+
+    radar_fig = build_radar_chart(byu_lineup, az_lineup)
+    st.plotly_chart(radar_fig, use_container_width=True)
+
+    # Breakout per-team radars side-by-side
+    col_r1, col_r2 = st.columns(2)
+    with col_r1:
+        st.markdown("**BYU Cougars**")
+        byu_solo = go.Figure()
+        byu_vals = _team_radar_values(byu_lineup)
+        byu_solo.add_trace(go.Scatterpolar(
+            r=byu_vals + [byu_vals[0]],
+            theta=RADAR_CATEGORIES + [RADAR_CATEGORIES[0]],
+            fill="toself", name="BYU",
+            line_color="#002E5D", fillcolor="rgba(0,46,93,0.3)",
+        ))
+        byu_solo.update_layout(
+            polar=dict(radialaxis=dict(visible=True, range=[0, 100])),
+            showlegend=False, margin=dict(t=20, b=20, l=40, r=40), height=350,
+        )
+        st.plotly_chart(byu_solo, use_container_width=True)
+
+    with col_r2:
+        st.markdown("**Arizona Wildcats**")
+        az_solo = go.Figure()
+        az_vals = _team_radar_values(az_lineup)
+        az_solo.add_trace(go.Scatterpolar(
+            r=az_vals + [az_vals[0]],
+            theta=RADAR_CATEGORIES + [RADAR_CATEGORIES[0]],
+            fill="toself", name="Arizona",
+            line_color="#CC0033", fillcolor="rgba(204,0,51,0.3)",
+        ))
+        az_solo.update_layout(
+            polar=dict(radialaxis=dict(visible=True, range=[0, 100])),
+            showlegend=False, margin=dict(t=20, b=20, l=40, r=40), height=350,
+        )
+        st.plotly_chart(az_solo, use_container_width=True)
+
+    # ---- Game simulation ----
+    st.divider()
+    st.subheader("Game Simulation")
+    st.caption(
+        "Monte Carlo simulation: each possession scored from a normal "
+        "distribution based on lineup stats. Adjust confidence to widen/narrow the band."
+    )
+
+    confidence = st.slider(
+        "Confidence interval (%)", min_value=50, max_value=99,
+        value=90, step=5, key="sim_confidence",
+    )
+
+    sim_fig, byu_wp, az_wp, byu_med_score, az_med_score = simulate_game(
+        byu_lineup, az_lineup, confidence_pct=confidence,
+    )
+    st.plotly_chart(sim_fig, use_container_width=True)
+
+    sc1, sc2, sc3, sc4 = st.columns(4)
+    sc1.metric("BYU Win Prob", f"{byu_wp:.0f}%")
+    sc2.metric("Arizona Win Prob", f"{az_wp:.0f}%")
+    sc3.metric("BYU Median Score", f"{byu_med_score:.0f}")
+    sc4.metric("Arizona Median Score", f"{az_med_score:.0f}")
+
+    # ---- 5×5 Matchup strength heatmap ----
+    st.divider()
+    st.subheader("Matchup Strength Matrix")
+    st.caption(
+        "Green = BYU advantage, Red = Arizona advantage. "
+        "Each row is a head-to-head matchup across six dimensions."
+    )
+    matrix_fig = build_matchup_matrix(results)
+    st.plotly_chart(matrix_fig, use_container_width=True)
+
+    # ---- Bench recommendation ----
+    st.divider()
+    st.subheader("First Off the Bench — Arizona")
+    st.caption(
+        "Arizona bench players ranked by potential impact. "
+        "Star rating reflects scoring, defense, rebounding, "
+        "positional need, and ability to improve the weakest matchup."
+    )
+
+    az_starter_names = [r["az_name"] for r in results]
+    bench = rank_bench_options(az_starter_names, results, ARIZONA_PLAYERS, is_arizona=True)
+
+    if bench:
+        # Top recommendation callout
+        top = bench[0]
+        st.success(
+            f"**Recommended:** #{top['player']['number']} {top['name']}  "
+            f"({top['player']['pos']}, {top['player']['class']})  —  "
+            f"{stars_display(top['stars'])}  \n"
+            f"_{top['reason']}_"
+        )
+
+        # Full bench table
+        bench_rows = []
+        for b in bench:
+            p = b["player"]
+            bench_rows.append({
+                "#": p["number"],
+                "Player": b["name"],
+                "Pos": p["pos"],
+                "Class": p["class"],
+                "Rating": stars_display(b["stars"]),
+                "PPG": p["pts"],
+                "RPG": p["reb"],
+                "APG": p["ast"],
+                "STL": p["stl"],
+                "BLK": p["blk"],
+                "Sub For": b["replace_for"] or "—",
+                "Rationale": b["reason"],
+            })
+        st.dataframe(
+            pd.DataFrame(bench_rows),
+            use_container_width=True,
+            hide_index=True,
+        )
+    else:
+        st.warning("No bench players available with game experience.")
+
+elif len(selected_names) == 0:
+    st.info("Select 1–5 BYU players above, then click **Generate Arizona Counter-Lineup**.")
+
+# ---- Arizona roster reference ----
+with st.expander("📋 Full Arizona Wildcats Roster & Stats", expanded=False):
+    az_rows = []
+    for name, p in ARIZONA_PLAYERS.items():
+        az_rows.append({
+            "#": p["number"],
+            "Player": name,
+            "Pos": p["pos"],
+            "Ht": p["height"],
+            "Class": p["class"],
+            "GP": p["gp"],
+            "PPG": p["pts"],
+            "RPG": p["reb"],
+            "APG": p["ast"],
+            "FG%": p["fg_pct"],
+            "3P%": p["three_pct"],
+        })
+    st.dataframe(
+        pd.DataFrame(az_rows).sort_values("PPG", ascending=False),
+        use_container_width=True,
+        hide_index=True,
+    )

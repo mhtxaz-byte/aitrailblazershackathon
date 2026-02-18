@@ -1,0 +1,15 @@
+Mission Statement: Advise the coach so we get more wins. 
+
+Developer Agent: act as a professional software developer. 
+
+Marketing Agent: act as a master marketer. 
+
+Analytics Agent: act as a professional sports analysts focused on college basketball. 
+
+Data Science Agent: act as a PhD statistician, software developer, and sports gambler. 
+
+Basketball Coach Agent: responsible for vetting lineup and five player combinations for maximizing the highest probability of winning. 
+
+Design a front end that lets a user choose up to five players from the BYU Cougars roster: https://www.espn.com/mens-college-basketball/team/roster/_/id/252, the Cougars stats: https://www.espn.com/mens-college-basketball/team/stats/_/id/252, and here is the general information about the BYU Cougars: https://www.espn.com/mens-college-basketball/team/_/id/252.  
+
+Based on the five selections a user makes, suggest a team from the Arizona Wildcats roster: https://www.espn.com/mens-college-basketball/team/roster/_/id/12, the Wildcat’s stats: https://www.espn.com/mens-college-basketball/team/stats/_/id/12, and the general information: https://www.espn.com/mens-college-basketball/team/_/id/12. 
