@@ -1,7 +1,8 @@
 # ApexCoach
 
-**AI-Powered Assistant Coach for NCAA Basketball**
 **2nd Place — AI Trailblazers Hack-AI-Thon**
+
+**AI-Powered Assistant Coach for NCAA Basketball**
 
 > "Every additional win is worth millions. What if we could increase win probability in real time?"
 
