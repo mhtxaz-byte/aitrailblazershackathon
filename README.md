@@ -136,7 +136,7 @@ ApexCoach is not analytics software. It is the inevitable evolution of coaching 
 
 - [Streamlit](https://streamlit.io/) — UI framework
 - Python 3.9
-- AI tools (Claude, ChatGPT) — used throughout development at the hackathon
+- AI tools (Deep Research, Gemini, Claude, ChatGPT, NotebookLM) — used throughout development at the hackathon
 - ESPN public data
 
 ---
